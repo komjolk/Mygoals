@@ -1,2 +1,2 @@
 # Mygoals
-A goal tracker with a simple goal. Easily shareable 
+A goal tracker with a simple goal. Easily shareable
