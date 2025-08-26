@@ -2,7 +2,7 @@
 
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
-import { GoalPage} from "./interfaces";
+import { GoalPage, Goal} from "./interfaces";
 
 const sql = postgres(process.env.DATABASE_URL!);
 
@@ -16,8 +16,8 @@ export async function fetchGoalPageBySlug(slug: string) : Promise<GoalPage> {
 }
 
 
-export async function fetchGoalsForGoalPage(goalPageId: string) {
-    const goals = await sql`
+export async function fetchGoalsForGoalPage(goalPageId: string) : Promise<Goal[]> {
+    const goals = await sql<Goal[]>`
         SELECT id, goal_page_id, completed, deadline, date_finished, created_at, type, data
         FROM goals
         WHERE goal_page_id = ${goalPageId}
