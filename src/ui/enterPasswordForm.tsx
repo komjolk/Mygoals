@@ -1,28 +1,36 @@
 'use server';
-import { createAccessSession } from "@/lib/data"
-
+import { createAccessSession } from "../lib/data";
+import { cookies } from "next/headers";
+import { redirect } from 'next/navigation'
 
 export default async function EnterPasswordForm(props: { params: Promise<{ id: string}> }) {
     const params = await props.params;
 
-return <form action={async (formData: FormData) => {
+    async function enterPasswordAction(formData: FormData) {
         'use server';
-    const password = formData.get("password") as string;
+        const password = formData.get("password") as string;
+        const id = params.id; // Extract the `id` from `params`
+        const cookieStore = await cookies();
         try {
-            const accessToken = await createAccessSession(params.id, password, false);
-            document.cookie = `accessToken=${accessToken}; path=/; max-age=86400`; // 1 day
-            window.location.href = `/goal/${params.id}`;
-            console.log("Access token:", accessToken);
+            const accessToken = await createAccessSession(id, password, false);
+            cookieStore.set({
+                name: `goal_access_${id}`,
+                value: accessToken,
+                httpOnly: true,
+            });
         } catch (e) {
             if (e === "not_found") {
-                alert("Goal page not found");
+                throw new Error("Goal page not found");
             } else if (e === "wrong_password") {
-                alert("Wrong password");
+                throw new Error("Wrong password");
             } else {
-                alert("An error occurred");
+                throw new Error("An error occurred");
             }
         }
-    }} className="flex flex-col gap-4">
+        redirect("/goal/" + id);
+
+    }
+return <form action={enterPasswordAction} className="flex flex-col gap-4">
         <label htmlFor="password">
             Password:
         </label>

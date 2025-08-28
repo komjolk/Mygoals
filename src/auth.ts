@@ -5,19 +5,19 @@ const sql = postgres(process.env.DATABASE_URL!);
 
 export async function authenticateViewAccess(goalPageID: string, providedToken: string) : Promise<boolean> {
   const accessTokens = await sql`
-    SELECT token_hash, created_at
+    SELECT token_hash, expires_at
     FROM goal_access_settings
     WHERE goal_page_id = ${goalPageID}
   ` as {token_hash: string, expires_at : string}[];
   if (accessTokens.length === 0) {
     return Promise.resolve(false);
   }
-  accessTokens.forEach(async (token) => {
+  for (const token of accessTokens) {
     const isMatch = await bcrypt.compare(providedToken, token.token_hash);
     if (isMatch && (Date.now() - new Date(token.expires_at).getTime()) < 24 * 60 * 60 * 1000) {
       return true;
     }
-  });
+  }
   return false
 
 }
@@ -31,12 +31,12 @@ export async function authenticateEditAccess(goalPageID: string, providedToken: 
   if (accessTokens.length === 0) {
     return Promise.resolve(false);
   }
-  accessTokens.forEach(async (token) => {
+  for (const token of accessTokens) {
     const isMatch = await bcrypt.compare(providedToken, token.token_hash);
     if (isMatch && (Date.now() - new Date(token.expires_at).getTime()) < 24 * 60 * 60 * 1000) {
       return true;
     }
-  });
+  }
   return false
 
 }
@@ -49,7 +49,7 @@ export async function createAccessToken(goalPageID: string, isEdit: boolean) : P
       ${tokenHash},
       ${goalPageID},
       ${isEdit}
-    ) ON CONFLICT (goal_page_id) DO UPDATE SET token_hash = EXCLUDED.token_hash, is_edit = EXCLUDED.is_edit, created_at = CURRENT_TIMESTAMP
+    ) ON CONFLICT (token_hash) DO UPDATE SET token_hash = EXCLUDED.token_hash, is_edit = EXCLUDED.is_edit, created_at = CURRENT_TIMESTAMP
   `;
   return token;
 }

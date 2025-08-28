@@ -56,8 +56,8 @@ async function seedGoals() {
 async function seedGoal_access_settings() {
     await sql`
         CREATE TABLE IF NOT EXISTS goal_access_settings (
-            token_hash VARCHAR(60),
-            goal_page_id UUID PRIMARY KEY REFERENCES goal_pages(id) ON DELETE CASCADE,
+            token_hash VARCHAR(60) PRIMARY KEY,
+            goal_page_id UUID REFERENCES goal_pages(id) ON DELETE CASCADE,
             is_edit BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours')
