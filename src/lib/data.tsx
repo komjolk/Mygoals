@@ -3,11 +3,11 @@
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
 import { GoalPage, Goal} from "./interfaces";
-import { authenticateViewAccess, createAccessToken } from "../auth";
+import { authenticateViewAccess} from "../auth";
 
 const sql = postgres(process.env.DATABASE_URL!);
 
-async function fetchGoalPageBySlug(slug: string) : Promise<GoalPage> {
+export async function fetchGoalPageBySlug(slug: string) : Promise<GoalPage> {
     const goalPages = await sql<GoalPage[]>`
         SELECT id, slug, created_at, view_password_hash, edit_password_hash
         FROM goal_pages
@@ -46,19 +46,3 @@ export async function fetchGoalsForGoalPage(goalPageId: string) : Promise<Goal[]
     return goals;
 }
 
-export async function createAccessSession(slug: string, password: string, isEdit : boolean) : Promise<string | "not_found" | "wrong_password"> {
-    const goalPage = await fetchGoalPageBySlug(slug);
-    if (!goalPage) {
-        throw new Error("not_found");
-    }
-    if(typeof password !== 'string' || password.length === 0) 
-        throw new Error("wrong_password");
-    const passwordHash = isEdit ? goalPage.edit_password_hash : goalPage.view_password_hash
-    const isMatch = await bcrypt.compare(password, passwordHash);
-    if (!isMatch) {
-        throw new Error("wrong_password");
-    }
-    
-    const token = await createAccessToken(goalPage.id, isEdit);
-    return token;
-}

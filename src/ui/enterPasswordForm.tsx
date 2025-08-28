@@ -1,5 +1,5 @@
 'use server';
-import { createAccessSession } from "../lib/data";
+import { createAccessSession } from "@/auth";
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation'
 
@@ -12,20 +12,19 @@ export default async function EnterPasswordForm(props: { params: Promise<{ id: s
         const id = params.id; // Extract the `id` from `params`
         const cookieStore = await cookies();
         try {
-            const accessToken = await createAccessSession(id, password, false);
+            const accessToken = await createAccessSession(id, password);
+            if (accessToken === "not_found") {
+                throw new Error("Goal page not found");
+            } else if (accessToken === "wrong_password") {
+                throw new Error("Wrong password");
+            }
             cookieStore.set({
                 name: `goal_access_${id}`,
                 value: accessToken,
                 httpOnly: true,
             });
         } catch (e) {
-            if (e === "not_found") {
-                throw new Error("Goal page not found");
-            } else if (e === "wrong_password") {
-                throw new Error("Wrong password");
-            } else {
-                throw new Error("An error occurred");
-            }
+            throw new Error("An error occurred " + e);
         }
         redirect("/goal/" + id);
 

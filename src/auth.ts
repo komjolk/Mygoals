@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import postgres  from "postgres";
+import { fetchGoalPageBySlug } from "./lib/data";
 
 const sql = postgres(process.env.DATABASE_URL!);
 
@@ -51,5 +52,26 @@ export async function createAccessToken(goalPageID: string, isEdit: boolean) : P
       ${isEdit}
     ) ON CONFLICT (token_hash) DO UPDATE SET token_hash = EXCLUDED.token_hash, is_edit = EXCLUDED.is_edit, created_at = CURRENT_TIMESTAMP
   `;
+  return token;
+}
+
+export async function createAccessSession(slug: string, password: string) : Promise<string | "not_found" | "wrong_password"> {
+  const goalPage = await fetchGoalPageBySlug(slug);
+  if (!goalPage) {
+      return("not_found");
+  }
+  if(typeof password !== 'string' || password.length === 0) 
+      return("wrong_password");
+  let token = '';
+  if(await bcrypt.compare(password, goalPage.view_password_hash))
+    token = await createAccessToken(goalPage.id, false);
+  else if(goalPage.edit_password_hash && await bcrypt.compare(password, goalPage.edit_password_hash))
+    token = await createAccessToken(goalPage.id, true);
+    
+
+  if (token === '') {
+      return("wrong_password");
+  }
+  
   return token;
 }
