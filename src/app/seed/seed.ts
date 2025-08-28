@@ -4,6 +4,7 @@ import postgres from 'postgres';
 const sql = postgres(process.env.DATABASE_URL!);
 
 async function seedGoalPages() {
+    await sql`DROP TABLE IF EXISTS goal_pages CASCADE`;
     await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
     await sql`
         CREATE TABLE IF NOT EXISTS goal_pages (
@@ -52,11 +53,24 @@ async function seedGoals() {
          `;
 };
 
+async function seedGoal_access_settings() {
+    await sql`
+        CREATE TABLE IF NOT EXISTS goal_access_settings (
+            token_hash VARCHAR(60) PRIMARY KEY,
+            goal_page_id UUID REFERENCES goal_pages(id) ON DELETE CASCADE,
+            is_edit BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours')
+        )
+    `;
+}
+
 export default async function main() {
     try {
         sql.begin(async (sql) => {
             await seedGoalPages();
             await seedGoals();
+            await seedGoal_access_settings();
         });
         return 'Database seeded successfully'
     } catch (error) {
